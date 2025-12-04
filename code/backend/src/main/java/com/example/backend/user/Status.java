@@ -1,4 +1,6 @@
 package com.example.backend.user;
 
-public class Status {
+public enum Status {
+    ONLINE, OFFLINE
 }
+
