@@ -6,11 +6,20 @@ import { ChatHeader } from './ChatHeader';
 import { ChatWindow } from './ChatWindow';
 import { UserList } from './UserList';
 
-// This component acts as the main application layout and state provider
 export const ChatContainer: React.FC = () => {
     const { isConnected } = useChat();
 
-    if (!isConnected) return null;
+    // Show loading state while WebSocket is connecting
+    if (!isConnected) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-gray-50">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600 text-lg">Connecting to chat...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col h-screen max-h-screen antialiased bg-gray-100">

@@ -43,7 +43,7 @@ export const UserList: React.FC = () => {
                             <div className="flex items-center justify-between">
                                 <span className="font-medium text-gray-800">{user.fullName}</span>
                                 <span className="text-xs text-green-500 flex items-center">
-                <span className="w-2 h-2 mr-1 bg-green-500 rounded-full"></span>
+                <span className="w-2 bg-green-500 rounded-full"></span>
                 Online
             </span>
                             </div>
