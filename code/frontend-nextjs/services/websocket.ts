@@ -5,7 +5,7 @@ import { User, ChatMessage, ChatNotification } from '@/types'
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080/ws'
 export class WebSocketService {
     private client: Client | null = null
-    private reconnectDelay = 5000
+    private readonly reconnectDelay = 5000
 
     connect(
         user: User,
