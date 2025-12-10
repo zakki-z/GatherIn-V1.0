@@ -22,8 +22,8 @@ export default function ChatPage() {
         setCurrentUser(JSON.parse(userStr))
     }, [router])
 
-    const { users, isConnected } = useWebSocket(currentUser)
-    const { messages, sendMessage, loadMessages } = useChat(currentUser, selectedUser)
+    const {users, isConnected} = useWebSocket(currentUser)
+    const {messages, sendMessage, loadMessages} = useChat(currentUser, selectedUser)
 
     const handleUserSelect = (user: User) => {
         setSelectedUser(user)
@@ -42,20 +42,23 @@ export default function ChatPage() {
     }
 
     return (
-        <div className="h-screen flex flex-col">
-            <header className="bg-white border-b px-6 py-4 flex justify-between items-center">
-                <div>
-                    <h1 className="text-xl font-semibold">Chat Application</h1>
-                    <p className="text-sm text-gray-600">{currentUser.fullName}</p>
+        <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors">
+            <header
+                className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-sm">
+                <div className="w-full sm:w-auto">
+                    <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">Chat Application</h1>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5">{currentUser.fullName}</p>
                 </div>
-                <div className="flex items-center gap-4">
-          <span className={`flex items-center gap-2 text-sm ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
-            <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-600' : 'bg-red-600'}`} />
-              {isConnected ? 'Connected' : 'Disconnected'}
-          </span>
+                <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto justify-between sm:justify-end">
+                <span
+                    className={`flex items-center gap-2 text-xs sm:text-sm font-medium ${isConnected ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    <span
+                        className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-600 dark:bg-green-400 animate-pulse' : 'bg-red-600 dark:bg-red-400 animate-pulse'}`}/>
+                    {isConnected ? 'Connected' : 'Disconnected'}
+                </span>
                     <button
                         onClick={handleLogout}
-                        className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg transition-colors font-medium"
                     >
                         Logout
                     </button>

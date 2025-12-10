@@ -1,9 +1,7 @@
-@tailwind utilities;
-@tailwind utilities;
+@import "tailwindcss";
 
 * {
   box-sizing: border-box;
-  padding: 0;
   margin: 0;
 }
 
