@@ -21,7 +21,8 @@ interface UseChatHook {
     isFetchingMessages: boolean;
 }
 
-const USER_PUBLIC_TOPIC = '/user/public';
+// FIX: Updated to match backend change
+const USER_PUBLIC_TOPIC = '/topic/public';
 const PRIVATE_MESSAGE_QUEUE = '/user/queue/messages';
 
 // ----------------------------------------------------
@@ -171,12 +172,19 @@ const useChatLogic = (): UseChatHook => {
         };
         fetchInitialUsers();
 
+        // FIX: Use ref directly for cleanup to avoid depending on 'disconnectUser'
+        // which changes when currentUser changes, causing accidental disconnects.
         return () => {
             if (stompClientRef.current) {
-                disconnectUser();
+                if (stompClientRef.current.connected) {
+                    stompClientRef.current.disconnect(() => {
+                        console.log('Disconnected from STOMP on unmount');
+                    });
+                }
             }
         };
-    }, [disconnectUser]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // FIX: Empty dependency array ensures this only runs on mount/unmount
 
     return {
         currentUser,
