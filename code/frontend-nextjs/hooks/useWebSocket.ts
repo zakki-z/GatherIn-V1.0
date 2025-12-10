@@ -3,7 +3,6 @@ import {User, ChatNotification, ChatMessage} from '@/types'
 import { WebSocketService } from '@/services/websocket'
 import { api } from '@/services/api'
 
-
 export function useWebSocket(currentUser: User | null) {
     const [users, setUsers] = useState<User[]>([])
     const [isConnected, setIsConnected] = useState(false)
@@ -16,38 +15,8 @@ export function useWebSocket(currentUser: User | null) {
         const wsService = new WebSocketService()
         wsServiceRef.current = wsService
 
-        wsService.connect(
-            currentUser,
-            () => {
-                setIsConnected(true)
-                loadUsers()
-            },
-            (user) => {
-                setUsers((prev) => {
-                    const exists = prev.find((u) => u.nickName === user.nickName)
-                    if (exists) {
-                        return prev.map((u) => (u.nickName === user.nickName ? user : u))
-                    }
-                    return [...prev, user]
-                })
-            },
-            (notification) => {
-                if (notificationCallbackRef.current) {
-                    notificationCallbackRef.current(notification)
-                }
-            },
-            (error) => {
-                console.error('WebSocket error:', error)
-                setIsConnected(false)
-            }
-        )
-
-        async function loadUsers() {
-            if (!currentUser) return;
-
-            const connectedUsers = await api.getConnectedUsers()
-            setUsers(connectedUsers.filter((u) => u.nickName !== currentUser.nickName))
-        }
+        const handlers = createWebSocketHandlers(currentUser, setIsConnected, setUsers, notificationCallbackRef)
+        wsService.connect(currentUser, ...handlers)
 
         return () => {
             wsService.disconnect(currentUser)
@@ -63,4 +32,53 @@ export function useWebSocket(currentUser: User | null) {
     }
 
     return { users, isConnected, sendMessage, setNotificationCallback }
+}
+
+function createWebSocketHandlers(
+    currentUser: User,
+    setIsConnected: (connected: boolean) => void,
+    setUsers: React.Dispatch<React.SetStateAction<User[]>>,
+    notificationCallbackRef: React.MutableRefObject<((notification: ChatNotification) => void) | null>
+) {
+    const onConnect = async () => {
+        setIsConnected(true)
+        await loadUsers(currentUser, setUsers)
+    }
+
+    const onUserUpdate = (user: User) => {
+        updateUserInList(user, setUsers)
+    }
+
+    const onNotification = (notification: ChatNotification) => {
+        notificationCallbackRef.current?.(notification)
+    }
+
+    const onError = (error: any) => {
+        console.error('WebSocket error:', error)
+        setIsConnected(false)
+    }
+
+    return [onConnect, onUserUpdate, onNotification, onError] as const
+}
+
+async function loadUsers(
+    currentUser: User,
+    setUsers: React.Dispatch<React.SetStateAction<User[]>>
+) {
+    const connectedUsers = await api.getConnectedUsers()
+    const filteredUsers = connectedUsers.filter((u) => u.nickName !== currentUser.nickName)
+    setUsers(filteredUsers)
+}
+
+function updateUserInList(
+    user: User,
+    setUsers: React.Dispatch<React.SetStateAction<User[]>>
+) {
+    setUsers((prev) => {
+        const exists = prev.find((u) => u.nickName === user.nickName)
+        if (exists) {
+            return prev.map((u) => (u.nickName === user.nickName ? user : u))
+        }
+        return [...prev, user]
+    })
 }
