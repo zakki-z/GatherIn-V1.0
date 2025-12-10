@@ -4,6 +4,7 @@ import { useState, FormEvent } from 'react'
 import Card from './ui/Card'
 import Input from './ui/Input'
 import Button from './ui/Button'
+import Image from "next/image";
 
 interface LoginFormProps {
     onLogin: (nickName: string, fullName: string) => void
@@ -26,9 +27,12 @@ export default function LoginForm({ onLogin, isLoading }: LoginFormProps) {
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="text-center">
                     <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 bg-gradient-to-br from-primary-400 to-primary-600 dark:from-primary-500 dark:to-primary-700 rounded-2xl flex items-center justify-center shadow-lg">
-                        <svg className="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
+                        <div className="w-full sm:w-auto">
+                            <Image src={"/chat.png"}
+                                   alt={"chat Logo"}
+                                   width={100}
+                                   height={100}/>
+                        </div>
                     </div>
                     <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Welcome to Chat</h1>
                     <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2">Enter your details to continue</p>
