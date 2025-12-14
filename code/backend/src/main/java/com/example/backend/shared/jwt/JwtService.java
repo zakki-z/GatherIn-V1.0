@@ -1,7 +1,7 @@
-package com.example.backend.shared.security;
+package com.example.backend.shared.jwt;
 
 
-import com.example.backend.shared.security.dto.TokenPair;
+import com.example.backend.auth.dto.TokenPair;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
