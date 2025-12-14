@@ -1,5 +1,6 @@
 package com.example.backend.user;
 
+import com.example.backend.user.enums.Status;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

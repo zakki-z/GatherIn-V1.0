@@ -1,5 +1,6 @@
 package com.example.backend.user;
 
+import com.example.backend.user.enums.Status;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
