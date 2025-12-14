@@ -3,12 +3,14 @@ import SockJS from 'sockjs-client'
 import { User, ChatMessage, ChatNotification } from '@/types'
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080/ws'
+
 export class WebSocketService {
     private client: Client | null = null
     private readonly reconnectDelay = 5000
 
     connect(
         user: User,
+        token: string, // UPDATED: Accept token
         onConnected: () => void,
         onUserUpdate: (user: User) => void,
         onMessageReceived: (notification: ChatNotification) => void,
@@ -19,10 +21,16 @@ export class WebSocketService {
             reconnectDelay: this.reconnectDelay,
             heartbeatIncoming: 4000,
             heartbeatOutgoing: 4000,
+
+            // UPDATED: Pass the Bearer token in headers
+            connectHeaders: {
+                Authorization: `Bearer ${token}`
+            },
+
             onConnect: () => {
                 console.log('WebSocket connected')
 
-                // Subscribe to public user updates - CHANGED
+                // Subscribe to public user updates
                 this.client?.subscribe('/topic/public', (message) => {
                     const userData = JSON.parse(message.body)
                     onUserUpdate(userData)

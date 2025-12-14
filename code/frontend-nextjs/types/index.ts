@@ -24,3 +24,20 @@ export interface ChatNotification {
     recipientId: string
     content: string
 }
+
+export interface LoginRequest {
+    username: string;
+    password: string;
+}
+
+export interface RegisterRequest {
+    fullName: string;
+    username: string;
+    password: string;
+    role: string;
+}
+
+export interface AuthResponse {
+    accessToken: string;
+    refreshToken: string;
+}

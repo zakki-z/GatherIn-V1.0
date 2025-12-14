@@ -1,27 +1,30 @@
 import { useEffect, useState, useRef } from 'react'
-import {User, ChatNotification, ChatMessage} from '@/types'
+import { User, ChatNotification, ChatMessage } from '@/types'
 import { WebSocketService } from '@/services/websocket'
 import { api } from '@/services/api'
 
-export function useWebSocket(currentUser: User | null) {
+export function useWebSocket(currentUser: User | null, token: string) {
     const [users, setUsers] = useState<User[]>([])
     const [isConnected, setIsConnected] = useState(false)
     const wsServiceRef = useRef<WebSocketService | null>(null)
     const notificationCallbackRef = useRef<((notification: ChatNotification) => void) | null>(null)
 
     useEffect(() => {
-        if (!currentUser) return
+        // Only connect if we have both a user and a valid token
+        if (!currentUser || !token) return
 
         const wsService = new WebSocketService()
         wsServiceRef.current = wsService
 
-        const handlers = createWebSocketHandlers(currentUser, setIsConnected, setUsers, notificationCallbackRef)
-        wsService.connect(currentUser, ...handlers)
+        const handlers = createWebSocketHandlers(currentUser, token, setIsConnected, setUsers, notificationCallbackRef)
+
+        // Pass token to the connect method
+        wsService.connect(currentUser, token, ...handlers)
 
         return () => {
             wsService.disconnect(currentUser)
         }
-    }, [currentUser])
+    }, [currentUser, token])
 
     const setNotificationCallback = (callback: (notification: ChatNotification) => void) => {
         notificationCallbackRef.current = callback
@@ -36,13 +39,15 @@ export function useWebSocket(currentUser: User | null) {
 
 function createWebSocketHandlers(
     currentUser: User,
+    token: string,
     setIsConnected: (connected: boolean) => void,
     setUsers: React.Dispatch<React.SetStateAction<User[]>>,
     notificationCallbackRef: React.MutableRefObject<((notification: ChatNotification) => void) | null>
 ) {
     const onConnect = async () => {
         setIsConnected(true)
-        await loadUsers(currentUser, setUsers)
+        // Pass token to loadUsers so it can call the protected API
+        await loadUsers(currentUser, token, setUsers)
     }
 
     const onUserUpdate = (user: User) => {
@@ -63,11 +68,17 @@ function createWebSocketHandlers(
 
 async function loadUsers(
     currentUser: User,
+    token: string,
     setUsers: React.Dispatch<React.SetStateAction<User[]>>
 ) {
-    const connectedUsers = await api.getConnectedUsers()
-    const filteredUsers = connectedUsers.filter((u) => u.nickName !== currentUser.nickName)
-    setUsers(filteredUsers)
+    try {
+        // Pass token to API call
+        const connectedUsers = await api.getConnectedUsers(token)
+        const filteredUsers = connectedUsers.filter((u) => u.nickName !== currentUser.nickName)
+        setUsers(filteredUsers)
+    } catch (error) {
+        console.error("Failed to load users", error);
+    }
 }
 
 function updateUserInList(

@@ -1,78 +1,127 @@
 'use client'
 
 import { useState, FormEvent } from 'react'
+import Link from 'next/link'
 import Card from './ui/Card'
 import Input from './ui/Input'
 import Button from './ui/Button'
-import Image from "next/image";
+import Image from "next/image"
+import { api } from '@/services/api'
 
 interface LoginFormProps {
-    onLogin: (nickName: string, fullName: string) => void
-    isLoading: boolean
+    mode: 'login' | 'signup'
+    onLoginSuccess: (username: string, fullName: string) => void
+    isLoading?: boolean
 }
 
-export default function LoginForm({ onLogin, isLoading }: LoginFormProps) {
-    const [nickName, setNickName] = useState('')
+export default function LoginForm({ mode, onLoginSuccess, isLoading: parentLoading }: LoginFormProps) {
+    const isLogin = mode === 'login'
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState('')
+
+    const [username, setUsername] = useState('')
+    const [password, setPassword] = useState('')
     const [fullName, setFullName] = useState('')
 
-    const handleSubmit = (e: FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault()
-        if (nickName.trim() && fullName.trim()) {
-            onLogin(nickName.trim(), fullName.trim())
+        setError('')
+        setLoading(true)
+
+        try {
+            if (isLogin) {
+                await api.auth.login({ username, password })
+                onLoginSuccess(username, username)
+            } else {
+                await api.auth.register({
+                    username,
+                    password,
+                    fullName,
+                    role: 'ROLE_USER'
+                })
+                await api.auth.login({ username, password })
+                onLoginSuccess(username, fullName)
+            }
+        } catch (err: any) {
+            setError(err.message || 'An error occurred')
+        } finally {
+            setLoading(false)
         }
     }
+
+    const isLoading = loading || parentLoading
 
     return (
         <Card className="w-full max-w-md mx-4 animate-fade-in">
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="text-center">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 bg-gradient-to-br from-primary-400 to-primary-600 dark:from-primary-500 dark:to-primary-700 rounded-2xl flex items-center justify-center shadow-lg">
-                        <div className="w-full sm:w-auto">
-                            <Image src={"/chat.png"}
-                                   alt={"chat Logo"}
-                                   width={100}
-                                   height={100}/>
-                        </div>
-                    </div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Welcome to Chat</h1>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2">Enter your details to continue</p>
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                        {isLogin ? 'Welcome Back' : 'Create Account'}
+                    </h1>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2">
+                        {isLogin ? 'Enter your credentials to continue' : 'Sign up to get started'}
+                    </p>
                 </div>
 
+                {error && (
+                    <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg text-center">
+                        {error}
+                    </div>
+                )}
+
                 <div className="space-y-4">
+                    {!isLogin && (
+                        <Input
+                            label="Full Name"
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                            placeholder="John Doe"
+                            required
+                            disabled={isLoading}
+                        />
+                    )}
+
                     <Input
-                        label="Nickname"
-                        type="text"
-                        value={nickName}
-                        onChange={(e) => setNickName(e.target.value)}
+                        label="Username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
                         placeholder="john_doe"
                         required
                         disabled={isLoading}
                     />
 
                     <Input
-                        label="Full Name"
-                        type="text"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        placeholder="John Doe"
+                        label="Password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
                         required
                         disabled={isLoading}
                     />
                 </div>
 
                 <Button type="submit" fullWidth disabled={isLoading}>
-                    {isLoading ? (
-                        <>
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Connecting...
-                        </>
-                    ) : (
-                        'Join Chat'
-                    )}
+                    {isLoading ? 'Processing...' : (isLogin ? 'Sign In' : 'Sign Up')}
                 </Button>
+
+                <div className="text-center text-sm">
+                    {isLogin ? (
+                        <p className="text-gray-600 dark:text-gray-400">
+                            Don't have an account?{' '}
+                            <Link href="/signup" className="text-primary-600 hover:underline font-medium">
+                                Sign up
+                            </Link>
+                        </p>
+                    ) : (
+                        <p className="text-gray-600 dark:text-gray-400">
+                            Already have an account?{' '}
+                            <Link href="/login" className="text-primary-600 hover:underline font-medium">
+                                Log in
+                            </Link>
+                        </p>
+                    )}
+                </div>
             </form>
         </Card>
     )

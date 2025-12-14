@@ -1,50 +1,33 @@
-import { useState, useEffect } from 'react'
-import { ChatMessage, User, ChatNotification } from '@/types'
+import { useState, useEffect, useCallback } from 'react'
 import { api } from '@/services/api'
-import { useWebSocket } from './useWebSocket'
+import { ChatMessage, User } from '@/types'
 
-export function useChat(currentUser: User | null, selectedUser: User | null) {
+export function useChat(currentUser: User | null, selectedUser: User | null, token: string) {
     const [messages, setMessages] = useState<ChatMessage[]>([])
-    const { sendMessage: wsSendMessage, setNotificationCallback } = useWebSocket(currentUser)
 
-    useEffect(() => {
-        if (!currentUser) return
+    // Wrapped in useCallback to ensure stability in dependency arrays
+    const loadMessages = useCallback(async () => {
+        if (!currentUser || !selectedUser || !token) return
 
-        setNotificationCallback((notification: ChatNotification) => {
-            if (
-                notification.senderId === selectedUser?.nickName ||
-                notification.recipientId === selectedUser?.nickName
-            ) {
-                const newMessage: ChatMessage = {
-                    id: notification.id,
-                    senderId: notification.senderId,
-                    recipientId: notification.recipientId,
-                    content: notification.content,
-                    timestamp: new Date(),
-                }
-                setMessages((prev) => [...prev, newMessage])
-            }
-        })
-    }, [currentUser, selectedUser, setNotificationCallback])
-
-    const loadMessages = async (senderId: string, recipientId: string) => {
-        const chatMessages = await api.getChatMessages(senderId, recipientId)
-        setMessages(chatMessages)
-    }
-
-    const sendMessage = (content: string) => {
-        if (!currentUser || !selectedUser || !content.trim()) return
-
-        const message: ChatMessage = {
-            senderId: currentUser.nickName,
-            recipientId: selectedUser.nickName,
-            content: content.trim(),
-            timestamp: new Date(),
+        try {
+            // Pass the token to the API call
+            const chatMessages = await api.getChatMessages(
+                currentUser.nickName,
+                selectedUser.nickName,
+                token
+            )
+            setMessages(chatMessages)
+        } catch (error) {
+            console.error("Failed to load chat history:", error)
+            setMessages([])
         }
+    }, [currentUser, selectedUser, token])
 
-        wsSendMessage(message)
-        setMessages((prev) => [...prev, message])
-    }
+    // Automatically load messages when the selected user changes
+    useEffect(() => {
+        loadMessages()
+    }, [loadMessages])
 
-    return { messages, sendMessage, loadMessages }
+    // Expose setMessages so the parent component can add real-time messages
+    return { messages, setMessages, loadMessages }
 }
