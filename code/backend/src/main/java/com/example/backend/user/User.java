@@ -16,9 +16,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document
 public class User {
     @Id
-    private String nickName;
-    private String fullName;
     private String username;
+    private String fullName;
     private String password;
     private String email;
     private Role role;
