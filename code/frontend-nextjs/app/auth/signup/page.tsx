@@ -12,7 +12,7 @@ export default async function SignUpPage() {
   const session = await getServerAuthSession();
 
   if (session) {
-    redirect("/dashboard");
+    redirect("/chat");
   }
   return (
     <div>

@@ -5,15 +5,14 @@ import { ChatMessage, User } from '@/types'
 export function useChat(currentUser: User | null, selectedUser: User | null, token: string) {
     const [messages, setMessages] = useState<ChatMessage[]>([])
 
-    // Wrapped in useCallback to ensure stability in dependency arrays
     const loadMessages = useCallback(async () => {
         if (!currentUser || !selectedUser || !token) return
 
         try {
-            // Pass the token to the API call
+            // CHANGED: nickName -> username
             const chatMessages = await api.getChatMessages(
-                currentUser.nickName,
-                selectedUser.nickName,
+                currentUser.username,
+                selectedUser.username,
                 token
             )
             setMessages(chatMessages)
@@ -23,11 +22,9 @@ export function useChat(currentUser: User | null, selectedUser: User | null, tok
         }
     }, [currentUser, selectedUser, token])
 
-    // Automatically load messages when the selected user changes
     useEffect(() => {
         loadMessages()
     }, [loadMessages])
 
-    // Expose setMessages so the parent component can add real-time messages
     return { messages, setMessages, loadMessages }
 }

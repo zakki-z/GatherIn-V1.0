@@ -1,6 +1,6 @@
 import { NextAuthOptions, getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { api } from "@/services/api"; //
+import { api } from "@/services/api";
 
 export const authOptions: NextAuthOptions = {
     providers: [
@@ -11,30 +11,50 @@ export const authOptions: NextAuthOptions = {
                 password: { label: "Password", type: "password" },
             },
             async authorize(credentials) {
+                console.log("🔐 Authorization attempt for:", credentials?.username);
+
                 if (!credentials?.username || !credentials?.password) {
+                    console.error("❌ Missing credentials");
                     return null;
                 }
+
                 try {
+                    console.log("📡 Calling backend login API...");
+
                     // Use the unified API service to login
                     const data = await api.login({
                         username: credentials.username,
                         password: credentials.password
                     });
 
-                    // The backend returns { accessToken, refreshToken } but no user details.
-                    // We map the input username to the session user so it's available.
+                    console.log("✅ Backend login successful");
+
+                    // The backend returns { accessToken, refreshToken }
                     if (data && data.accessToken) {
+                        console.log("✅ Tokens received, creating session");
                         return {
                             id: credentials.username,
                             name: credentials.username,
-                            email: null, // or credentials.email if available
+                            email: credentials.username, // Use username as email fallback
                             accessToken: data.accessToken,
                             refreshToken: data.refreshToken
                         };
                     }
+
+                    console.error("❌ No access token in response");
                     return null;
-                } catch (e) {
-                    console.error("Login failed:", e);
+                } catch (error: any) {
+                    console.error("❌ Login failed:", error.message);
+
+                    // Log more details to help debug
+                    if (error.message.includes("Invalid credentials")) {
+                        console.error("   → User doesn't exist or password is wrong");
+                        console.error("   → Try creating an account first via /auth/signup");
+                    } else if (error.message.includes("fetch")) {
+                        console.error("   → Cannot reach backend. Is it running on http://localhost:8080?");
+                    }
+
+                    // Return null to trigger NextAuth error
                     return null;
                 }
             },
@@ -44,6 +64,7 @@ export const authOptions: NextAuthOptions = {
         async jwt({ token, user }) {
             // Initial sign in
             if (user) {
+                console.log("💾 Storing tokens in JWT");
                 token.accessToken = (user as any).accessToken;
                 token.refreshToken = (user as any).refreshToken;
                 token.username = user.name;
@@ -51,6 +72,7 @@ export const authOptions: NextAuthOptions = {
             return token;
         },
         async session({ session, token }) {
+            console.log("📦 Creating session for:", token.username);
             // Send properties to the client
             return {
                 ...session,
@@ -58,13 +80,13 @@ export const authOptions: NextAuthOptions = {
                     ...session.user,
                     name: token.username as string,
                     accessToken: token.accessToken as string,
-                    // refreshToken: token.refreshToken as string // Optional: exclude if not needed on client
                 }
             };
         },
     },
     pages: {
         signIn: "/auth/signin",
+        error: "/auth/signin", // Redirect errors to signin (prevents /api/auth/error)
     },
     session: {
         strategy: "jwt",

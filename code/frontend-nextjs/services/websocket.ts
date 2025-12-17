@@ -10,7 +10,7 @@ export class WebSocketService {
 
     connect(
         user: User,
-        token: string, // UPDATED: Accept token
+        token: string,
         onConnected: () => void,
         onUserUpdate: (user: User) => void,
         onMessageReceived: (notification: ChatNotification) => void,
@@ -21,28 +21,23 @@ export class WebSocketService {
             reconnectDelay: this.reconnectDelay,
             heartbeatIncoming: 4000,
             heartbeatOutgoing: 4000,
-
-            // UPDATED: Pass the Bearer token in headers
             connectHeaders: {
                 Authorization: `Bearer ${token}`
             },
-
             onConnect: () => {
                 console.log('WebSocket connected')
 
-                // Subscribe to public user updates
                 this.client?.subscribe('/topic/public', (message) => {
                     const userData = JSON.parse(message.body)
                     onUserUpdate(userData)
                 })
 
-                // Subscribe to private messages
-                this.client?.subscribe(`/user/${user.nickName}/queue/messages`, (message) => {
+                // CHANGED: nickName -> username
+                this.client?.subscribe(`/user/${user.username}/queue/messages`, (message) => {
                     const notification = JSON.parse(message.body)
                     onMessageReceived(notification)
                 })
 
-                // Register user
                 this.client?.publish({
                     destination: '/app/user.addUser',
                     body: JSON.stringify(user),

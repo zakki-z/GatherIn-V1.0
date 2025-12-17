@@ -10,7 +10,6 @@ export function useWebSocket(currentUser: User | null, token: string) {
     const notificationCallbackRef = useRef<((notification: ChatNotification) => void) | null>(null)
 
     useEffect(() => {
-        // Only connect if we have both a user and a valid token
         if (!currentUser || !token) return
 
         const wsService = new WebSocketService()
@@ -18,7 +17,6 @@ export function useWebSocket(currentUser: User | null, token: string) {
 
         const handlers = createWebSocketHandlers(currentUser, token, setIsConnected, setUsers, notificationCallbackRef)
 
-        // Pass token to the connect method
         wsService.connect(currentUser, token, ...handlers)
 
         return () => {
@@ -46,7 +44,6 @@ function createWebSocketHandlers(
 ) {
     const onConnect = async () => {
         setIsConnected(true)
-        // Pass token to loadUsers so it can call the protected API
         await loadUsers(currentUser, token, setUsers)
     }
 
@@ -72,9 +69,9 @@ async function loadUsers(
     setUsers: React.Dispatch<React.SetStateAction<User[]>>
 ) {
     try {
-        // Pass token to API call
         const connectedUsers = await api.getConnectedUsers(token)
-        const filteredUsers = connectedUsers.filter((u) => u.nickName !== currentUser.nickName)
+        // CHANGED: nickName -> username
+        const filteredUsers = connectedUsers.filter((u) => u.username !== currentUser.username)
         setUsers(filteredUsers)
     } catch (error) {
         console.error("Failed to load users", error);
@@ -86,9 +83,10 @@ function updateUserInList(
     setUsers: React.Dispatch<React.SetStateAction<User[]>>
 ) {
     setUsers((prev) => {
-        const exists = prev.find((u) => u.nickName === user.nickName)
+        // CHANGED: nickName -> username
+        const exists = prev.find((u) => u.username === user.username)
         if (exists) {
-            return prev.map((u) => (u.nickName === user.nickName ? user : u))
+            return prev.map((u) => (u.username === user.username ? user : u))
         }
         return [...prev, user]
     })

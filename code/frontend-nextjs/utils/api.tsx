@@ -1,66 +1,120 @@
-import { BACKEND_API } from "./constants";
+import { User, ChatMessage, LoginRequest, RegisterRequest } from '@/types';
 
-export default async function apiAuthSignIn(
-    credentials: Record<"email" | "username" | "password", string> | undefined
-) {
-    try {
-        // FIX 1: Change path to /login
-        const response = await fetch(`${BACKEND_API}/api/auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(credentials),
-        });
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:8080';
 
-        if (!response.ok) {
-            throw new Error("Invalid credentials"); // Throwing ensures NextAuth catches it
-        }
-
-        const data = await response.json();
-
-        // FIX 2: Backend returns { accessToken, refreshToken }, not userID directly.
-        // You might need to decode the token to get the ID, or assume the username is the ID.
-        // For NextAuth, we just need to return the object containing the tokens.
-        if (data.accessToken) {
-            return data; // This object is passed to the authorize callback
-        }
-
-        return null;
-    } catch (error: any) {
-        throw new Error(error.message || "Authentication failed");
+// Helper for authorized headers
+const getAuthHeaders = (token?: string) => {
+    const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
     }
-}
+    return headers;
+};
 
-export async function apiAuthSignUp(credentials: {
-    username: string; // Note: Backend RegisterRequest doesn't seem to use email? Check RegisterRequest.java
-    password: string;
-    fullName: string;
-    email?: string;
-    status?: string;
-    // Added fullName as Backend requires it
-}) {
-    try {
-        // FIX 3: Change path to /register
-        const response = await fetch(`${BACKEND_API}/api/auth/register`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                username: credentials.username,
-                password: credentials.password,
-                fullName: credentials.fullName,
-                email: credentials.email,
-                status:credentials.status,
-                role: "ROLE_USER" // Ensure role is sent if required
-            }),
-        });
+export const api = {
+    // --- AUTHENTICATION ENDPOINTS ---
 
-        if (!response.ok) {
-            const errorData = await response.text(); // Backend might return string error
-            throw new Error(errorData || "Sign-up failed");
+    async login(credentials: LoginRequest) {
+        try {
+            console.log("Attempting login with:", { username: credentials.username });
+
+            const response = await fetch(`${API_URL}/api/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(credentials),
+            });
+
+            console.log("Login response status:", response.status);
+
+            // Get response text first
+            const responseText = await response.text();
+            console.log("Login response body:", responseText);
+
+            if (!response.ok) {
+                // Try to parse as JSON for structured error
+                let errorMessage = "Invalid credentials";
+                try {
+                    const errorData = JSON.parse(responseText);
+                    errorMessage = errorData.message || errorData.error || errorMessage;
+                } catch {
+                    // If not JSON, use the text as-is
+                    errorMessage = responseText || errorMessage;
+                }
+
+                console.error("Login failed:", errorMessage);
+                throw new Error(errorMessage);
+            }
+
+            // Parse successful response
+            const data = JSON.parse(responseText);
+            console.log("Login successful, tokens received:", {
+                hasAccessToken: !!data.accessToken,
+                hasRefreshToken: !!data.refreshToken
+            });
+
+            return data;
+        } catch (error: any) {
+            console.error("Login error:", error);
+            throw error; // Re-throw the original error
         }
+    },
 
-        // Backend returns string "User registered successfully", not JSON
-        return { success: true };
-    } catch (error: any) {
-        return { error: error.message };
-    }
-}
+    async register(data: RegisterRequest) {
+        try {
+            console.log("Attempting registration for:", data.username);
+
+            const response = await fetch(`${API_URL}/api/auth/register`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    ...data,
+                    role: data.role || "ROLE_USER"
+                }),
+            });
+
+            console.log("Register response status:", response.status);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("Registration failed:", errorText);
+                throw new Error(errorText || "Sign-up failed");
+            }
+
+            console.log("Registration successful");
+            return { success: true };
+        } catch (error: any) {
+            console.error("Registration error:", error);
+            throw new Error(error.message || "Sign-up failed");
+        }
+    },
+
+    // --- DATA ENDPOINTS ---
+
+    async getConnectedUsers(token: string): Promise<User[]> {
+        try {
+            const response = await fetch(`${API_URL}/users`, {
+                headers: getAuthHeaders(token)
+            });
+            if (!response.ok) throw new Error('Failed to fetch users');
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            return [];
+        }
+    },
+
+    async getChatMessages(senderId: string, recipientId: string, token: string): Promise<ChatMessage[]> {
+        try {
+            const response = await fetch(`${API_URL}/messages/${senderId}/${recipientId}`, {
+                headers: getAuthHeaders(token)
+            });
+            if (!response.ok) throw new Error('Failed to fetch messages');
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching messages:', error);
+            return [];
+        }
+    },
+};

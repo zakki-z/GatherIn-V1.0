@@ -1,12 +1,14 @@
 "use client";
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer, toast } from "react-toastify";
 import Link from "next/link";
-import { apiAuthSignUp } from "@/utils/api";
+import { api } from "@/services/api";
 
 export default function SignUpForm() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
     fullName: "",
@@ -27,27 +29,29 @@ export default function SignUpForm() {
       toast.error("Passwords do not match");
       return;
     }
+
+    setIsLoading(true);
+
     try {
-      const result = await apiAuthSignUp({
+      // Register the user using the api service
+      await api.register({
         username,
         password,
         fullName,
         email,
-        status: "ONLINE" // Pass as string since backend expects enum value
+        role: "ROLE_USER"
       });
 
-      if (result.error) throw new Error(result.error);
+      toast.success("Account created successfully! Please sign in.");
 
-      // Start session after signup
-      await signIn("credentials", {
-        email,
-        password,
-        username,
-        callbackUrl: "/dashboard",
-        redirect: true,
-      });
+      // Redirect to sign in page after 1.5 seconds
+      setTimeout(() => {
+        router.push("/auth/signin");
+      }, 1500);
+
     } catch (error: any) {
       toast.error(error.message || "Sign up failed");
+      setIsLoading(false);
     }
   };
 
@@ -74,6 +78,7 @@ export default function SignUpForm() {
                 value={username}
                 onChange={handleChange}
                 required
+                disabled={isLoading}
             />
           </div>
           <div className="mb-4">
@@ -92,6 +97,7 @@ export default function SignUpForm() {
                 value={fullName}
                 onChange={handleChange}
                 required
+                disabled={isLoading}
             />
           </div>
           <div className="mb-4">
@@ -110,6 +116,7 @@ export default function SignUpForm() {
                 value={email}
                 onChange={handleChange}
                 required
+                disabled={isLoading}
             />
           </div>
           <div className="mb-4">
@@ -128,6 +135,7 @@ export default function SignUpForm() {
                 value={password}
                 onChange={handleChange}
                 required
+                disabled={isLoading}
             />
           </div>
           <div className="mb-4">
@@ -146,14 +154,16 @@ export default function SignUpForm() {
                 value={confirmPassword}
                 onChange={handleChange}
                 required
+                disabled={isLoading}
             />
           </div>
           <div className="flex items-center justify-between">
             <button
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50 disabled:cursor-not-allowed"
                 type="submit"
+                disabled={isLoading}
             >
-              Sign Up
+              {isLoading ? "Creating Account..." : "Sign Up"}
             </button>
             <Link
                 className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import UserList from '@/components/chat/UserList'
@@ -17,7 +17,6 @@ export default function ChatPage() {
     const [currentUser, setCurrentUser] = useState<User | null>(null)
     const [selectedUser, setSelectedUser] = useState<User | null>(null)
 
-    // 1. Handle Authentication & User Loading
     useEffect(() => {
         if (status === 'loading') return
         if (status === 'unauthenticated' || !session?.user) {
@@ -25,34 +24,30 @@ export default function ChatPage() {
             return
         }
 
-        // Avoid cascading renders by checking if data actually changed
-        const newNickName = session.user.name || 'Unknown'
-        if (currentUser?.nickName !== newNickName) {
+        // CHANGED: nickName -> username
+        const username = session.user.name || 'Unknown'
+        if (currentUser?.username !== username) {
             setCurrentUser({
-                nickName: newNickName,
-                fullName: newNickName, // Use name as fallback for fullName
+                username: username,
+                fullName: username,
                 status: Status.ONLINE
             })
         }
     }, [session, status, router, currentUser])
 
-    // Get Access Token
     const accessToken = (session as any)?.user?.accessToken || ''
 
-    // 2. Initialize Hooks
     const { users, isConnected, sendMessage, setNotificationCallback } = useWebSocket(currentUser, accessToken)
     const { messages, setMessages, loadMessages } = useChat(currentUser, selectedUser, accessToken)
 
-    // 3. Handle Incoming Messages (Real-time)
     useEffect(() => {
         if (!setNotificationCallback) return;
 
         setNotificationCallback((notification: ChatNotification) => {
-            // Only update if the message belongs to the currently selected conversation
+            // CHANGED: nickName -> username
             if (selectedUser &&
-                (notification.senderId === selectedUser.nickName || notification.senderId === currentUser?.nickName)) {
+                (notification.senderId === selectedUser.username || notification.senderId === currentUser?.username)) {
 
-                // Convert Notification to ChatMessage structure
                 setMessages(prev => [...prev, {
                     id: notification.id,
                     senderId: notification.senderId,
@@ -64,27 +59,22 @@ export default function ChatPage() {
         })
     }, [selectedUser, currentUser, setNotificationCallback, setMessages])
 
-    // 4. Handle User Selection
     const handleUserSelect = (user: User) => {
         setSelectedUser(user)
-        // loadMessages is triggered automatically by useChat's internal useEffect when selectedUser changes
     }
 
-    // 5. Handle Sending Messages
     const handleSendMessage = (content: string) => {
         if (!currentUser || !selectedUser) return
 
         const message = {
-            senderId: currentUser.nickName,
-            recipientId: selectedUser.nickName,
+            // CHANGED: nickName -> username
+            senderId: currentUser.username,
+            recipientId: selectedUser.username,
             content: content,
             timestamp: new Date()
         }
 
-        // Send via WebSocket
         sendMessage(message)
-
-        // Optimistically add to UI
         setMessages(prev => [...prev, message])
     }
 

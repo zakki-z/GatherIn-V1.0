@@ -26,10 +26,10 @@ export default function UserList({ users, currentUser, selectedUser, onUserSelec
                     <div className="divide-y divide-gray-200 dark:divide-gray-700">
                         {users.map((user) => (
                             <button
-                                key={user.nickName}
+                                key={user.username}
                                 onClick={() => onUserSelect(user)}
                                 className={`w-full p-3 sm:p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all flex items-center gap-3 animate-fade-in ${
-                                    selectedUser?.nickName === user.nickName
+                                    selectedUser?.username === user.username
                                         ? 'bg-primary-50 dark:bg-primary-900/20 border-l-4 border-primary-500'
                                         : ''
                                 }`}
@@ -49,7 +49,7 @@ export default function UserList({ users, currentUser, selectedUser, onUserSelec
                                         {user.fullName}
                                     </p>
                                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
-                                        @{user.nickName}
+                                        @{user.username}
                                     </p>
                                 </div>
                             </button>

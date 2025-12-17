@@ -1,60 +1,167 @@
-import { useEffect, useRef } from 'react'
-import { ChatMessage } from '@/types'
+"use client";
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import "react-toastify/dist/ReactToastify.css";
+import { ToastContainer, toast } from "react-toastify";
+import Link from "next/link";
+import { api } from "@/services/api";
 
-interface MessageListProps {
-    messages: ChatMessage[]
-    currentUserId: string
-}
+export default function SignUpForm() {
+    const [formData, setFormData] = useState({
+        username: "",
+        fullName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+    });
+    const { username, fullName, email, password, confirmPassword } = formData;
 
-export default function MessageList({ messages, currentUserId }: MessageListProps) {
-    const messagesEndRef = useRef<HTMLDivElement>(null)
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, [messages])
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
 
-    const formatTime = (date: Date) => {
-        return new Date(date).toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-        })
-    }
+        if (password !== confirmPassword) {
+            toast.error("Passwords do not match");
+            return;
+        }
+
+        try {
+            await api.register({
+                username,
+                password,
+                fullName,
+                email,
+                role: "ROLE_USER"
+            });
+
+            // Auto-login after successful signup
+            await signIn("credentials", {
+                username, // Changed from email
+                password,
+                callbackUrl: "/chat", // Changed to /chat
+                redirect: true,
+            });
+        } catch (error: any) {
+            toast.error(error.message || "Sign up failed");
+        }
+    };
 
     return (
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 sm:space-y-4 bg-gray-50 dark:bg-gray-900 custom-scrollbar">
-            {messages.length === 0 ? (
-                <div className="text-center text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-8 animate-fade-in">
-                    No messages yet. Start the conversation!
+        <div className="flex justify-center items-center h-screen">
+            <form
+                onSubmit={handleSubmit}
+                className="bg-gray-200 shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full sm:w-1/2 md:w-1/3 lg:w-1/4 flex flex-col"
+            >
+                <h1 className="text-3xl font-bold mb-4">Sign Up</h1>
+                <div className="mb-4">
+                    <label
+                        className="block text-gray-700 text-sm font-bold mb-2"
+                        htmlFor="username"
+                    >
+                        Username
+                    </label>
+                    <input
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        id="username"
+                        type="text"
+                        name="username"
+                        placeholder="Username"
+                        value={username}
+                        onChange={handleChange}
+                        required
+                    />
                 </div>
-            ) : (
-                messages.map((message, index) => {
-                    const isOwnMessage = message.senderId === currentUserId
-                    return (
-                        <div
-                            key={message.id || index}
-                            className={`flex animate-slide-up ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
-                        >
-                            <div
-                                className={`max-w-[85%] sm:max-w-xs lg:max-w-md px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl shadow-sm ${
-                                    isOwnMessage
-                                        ? 'bg-primary-600 dark:bg-primary-500 text-white rounded-br-none'
-                                        : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-none border border-gray-200 dark:border-gray-600'
-                                }`}
-                            >
-                                <p className="break-words text-sm sm:text-base leading-relaxed">{message.content}</p>
-                                <p
-                                    className={`text-[10px] sm:text-xs mt-1 ${
-                                        isOwnMessage ? 'text-primary-100' : 'text-gray-500 dark:text-gray-400'
-                                    }`}
-                                >
-                                    {formatTime(message.timestamp)}
-                                </p>
-                            </div>
-                        </div>
-                    )
-                })
-            )}
-            <div ref={messagesEndRef} />
+                <div className="mb-4">
+                    <label
+                        className="block text-gray-700 text-sm font-bold mb-2"
+                        htmlFor="fullName"
+                    >
+                        Full Name
+                    </label>
+                    <input
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        id="fullName"
+                        type="text"
+                        name="fullName"
+                        placeholder="Full Name"
+                        value={fullName}
+                        onChange={handleChange}
+                        required
+                    />
+                </div>
+                <div className="mb-4">
+                    <label
+                        className="block text-gray-700 text-sm font-bold mb-2"
+                        htmlFor="email"
+                    >
+                        Email
+                    </label>
+                    <input
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        id="email"
+                        type="email"
+                        name="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={handleChange}
+                        required
+                    />
+                </div>
+                <div className="mb-4">
+                    <label
+                        className="block text-gray-700 text-sm font-bold mb-2"
+                        htmlFor="password"
+                    >
+                        Password
+                    </label>
+                    <input
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        id="password"
+                        type="password"
+                        name="password"
+                        placeholder="******************"
+                        value={password}
+                        onChange={handleChange}
+                        required
+                    />
+                </div>
+                <div className="mb-4">
+                    <label
+                        className="block text-gray-700 text-sm font-bold mb-2"
+                        htmlFor="confirmPassword"
+                    >
+                        Confirm Password
+                    </label>
+                    <input
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        id="confirmPassword"
+                        type="password"
+                        name="confirmPassword"
+                        placeholder="******************"
+                        value={confirmPassword}
+                        onChange={handleChange}
+                        required
+                    />
+                </div>
+                <div className="flex items-center justify-between">
+                    <button
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                        type="submit"
+                    >
+                        Sign Up
+                    </button>
+                    <Link
+                        className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
+                        href="/auth/signin"
+                    >
+                        Already have an account?
+                    </Link>
+                </div>
+            </form>
+            <ToastContainer autoClose={3000} hideProgressBar />
         </div>
-    )
+    );
 }
