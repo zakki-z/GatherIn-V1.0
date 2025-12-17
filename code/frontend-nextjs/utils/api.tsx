@@ -31,10 +31,12 @@ export default async function apiAuthSignIn(
 }
 
 export async function apiAuthSignUp(credentials: {
-    username: string;
-    email: string; // Note: Backend RegisterRequest doesn't seem to use email? Check RegisterRequest.java
+    username: string; // Note: Backend RegisterRequest doesn't seem to use email? Check RegisterRequest.java
     password: string;
-    fullName: string; // Added fullName as Backend requires it
+    fullName: string;
+    email?: string;
+    status?: string;
+    // Added fullName as Backend requires it
 }) {
     try {
         // FIX 3: Change path to /register
@@ -44,7 +46,9 @@ export async function apiAuthSignUp(credentials: {
             body: JSON.stringify({
                 username: credentials.username,
                 password: credentials.password,
-                fullName: credentials.fullName, // Ensure this is passed
+                fullName: credentials.fullName,
+                email: credentials.email,
+                status:credentials.status,
                 role: "ROLE_USER" // Ensure role is sent if required
             }),
         });
