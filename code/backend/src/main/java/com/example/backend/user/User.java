@@ -32,8 +32,6 @@ public class User implements UserDetails {
     private String email;
     private Role role;
     private Status status;
-
-    // UserDetails implementation
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role.name()));

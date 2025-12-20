@@ -6,6 +6,7 @@ import com.example.backend.auth.dto.RegisterRequest;
 import com.example.backend.auth.dto.TokenPair;
 import com.example.backend.shared.jwt.JwtService;
 import com.example.backend.user.UserRepository;
+import com.example.backend.user.enums.Status;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -39,8 +40,10 @@ public class AuthService {
                 .builder()
                 .fullName(registerRequest.getFullName())
                 .username(registerRequest.getUsername())
+                .email(registerRequest.getEmail())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
                 .role(registerRequest.getRole())
+                .status(Status.OFFLINE)
                 .build();
 
         userRepository.save(user);
