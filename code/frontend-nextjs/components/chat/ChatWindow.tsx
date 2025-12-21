@@ -28,10 +28,10 @@ export default function ChatWindow({ currentUser, selectedUser, messages, onSend
         <div className="flex-1 flex flex-col bg-white dark:bg-gray-800">
             <div className="border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 bg-white dark:bg-gray-800 shadow-sm">
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">{selectedUser.fullName}</h2>
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">@{selectedUser.nickName}</p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">@{selectedUser.username}</p>
             </div>
 
-            <MessageList messages={messages} currentUserId={currentUser.nickName} />
+            <MessageList messages={messages} currentUserId={currentUser.username} />
             <MessageInput onSendMessage={onSendMessage} />
         </div>
     )
