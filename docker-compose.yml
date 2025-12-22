@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    container_name: gatherin_mongodb
+    image: mongodb/mongodb-community-server:8.0-ubi8
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: changeME
+      MONGO_INITDB_ROOT_PASSWORD: changeME
+    volumes:
+      - ./data:/data/db
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--username", "changeME", "--password", "changeME", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # Spring Boot Backend Service
+  backend:
+    container_name: gatherin_backend
+    build: 
+      context: .
+      dockerfile: infra/spring-boot/Dockerfile
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://changeME:changeME@mongodb:27017/gatherindb?authSource=admin
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  # Next.js Frontend Service
+  frontend:
+    container_name: gatherin_frontend
+    build:
+      context: .
+      dockerfile: infra/next-js/Dockerfile
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:8080
+    depends_on:
+      backend:
+        condition: service_started
