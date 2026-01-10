@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -13,7 +14,19 @@ public class UserService {
     private final UserRepository repository;
 
     public void saveUser(User user) {
-        user.setStatus(Status.ONLINE);
+        // Check if user already exists
+        Optional<User> existingUser = repository.findByUsername(user.getUsername());
+
+        if (existingUser.isPresent()) {
+            // Update existing user (e.g., update status to ONLINE)
+            User existing = existingUser.get();
+            existing.setStatus(user.getStatus());
+            existing.setFullName(user.getFullName());
+            repository.save(existing);
+            return;
+        }
+
+        // Insert new user
         repository.save(user);
     }
 
