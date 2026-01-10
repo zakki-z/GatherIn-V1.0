@@ -21,7 +21,6 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest request) {
-        // Save the new user to the database and return success response.
         authService.registerUser(request);
         return ResponseEntity.ok("User registered successfully");
     }

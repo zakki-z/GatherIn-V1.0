@@ -1,6 +1,7 @@
 package com.example.backend.chat;
 
 import com.example.backend.chatroom.ChatRoomService;
+import com.example.backend.shared.exceptions.ChatRoomNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +17,7 @@ public class ChatMessageService {
     public ChatMessage save(ChatMessage chatMessage) {
         var chatId = chatRoomService
                 .getChatRoomId(chatMessage.getSenderId(), chatMessage.getRecipientId(), true)
-                .orElseThrow(); // You can create your own dedicated exception
+                .orElseThrow(()-> new ChatRoomNotFoundException("Chat room not found"));
         chatMessage.setChatId(chatId);
         repository.save(chatMessage);
         return chatMessage;

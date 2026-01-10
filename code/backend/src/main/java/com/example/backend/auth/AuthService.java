@@ -4,6 +4,8 @@ import com.example.backend.auth.dto.LoginRequest;
 import com.example.backend.auth.dto.RefreshTokenRequest;
 import com.example.backend.auth.dto.RegisterRequest;
 import com.example.backend.auth.dto.TokenPair;
+import com.example.backend.shared.exceptions.UserExistsException;
+import com.example.backend.shared.exceptions.UserNotFoundException;
 import com.example.backend.shared.jwt.JwtService;
 import com.example.backend.user.UserRepository;
 import com.example.backend.user.enums.Status;
@@ -30,12 +32,9 @@ public class AuthService {
     private final UserDetailsService userDetailsService;
 
     public void registerUser(RegisterRequest registerRequest) {
-        // Check if user with the same username already exist
         if(userRepository.existsByUsername(registerRequest.getUsername())) {
-            throw new IllegalArgumentException("Username is already in use");
+            throw new UserExistsException("Username is already in use");
         }
-
-        // Create new user
         User user = User
                 .builder()
                 .fullName(registerRequest.getFullName())
@@ -50,25 +49,19 @@ public class AuthService {
     }
 
     public TokenPair login(LoginRequest loginRequest) {
-        // Authenticate the user
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getUsername(),
                         loginRequest.getPassword()
                 )
         );
-
-        // Set authentication in security context
         SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        // Generate Token Pair
         return jwtService.generateTokenPair(authentication);
     }
 
     public TokenPair refreshToken(@Valid RefreshTokenRequest request) {
 
         String refreshToken = request.getRefreshToken();
-        // check if it is valid refresh token
         if(!jwtService.isRefreshToken(refreshToken)) {
             throw new IllegalArgumentException("Invalid refresh token");
         }
@@ -77,7 +70,7 @@ public class AuthService {
         UserDetails userDetails = userDetailsService.loadUserByUsername(user);
 
         if (userDetails == null) {
-            throw new IllegalArgumentException("User not found");
+            throw new UserNotFoundException("User not found");
         }
 
         UsernamePasswordAuthenticationToken authentication =
