@@ -2,6 +2,7 @@ package com.example.backend.user;
 
 import com.example.backend.user.enums.Status;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -37,7 +38,7 @@ public class UserService {
             repository.save(storedUser);
         }
     }
-
+    @Cacheable(value = "connectedUsers")
     public List<User> findConnectedUsers() {
         return repository.findAllByStatus(Status.ONLINE);
     }

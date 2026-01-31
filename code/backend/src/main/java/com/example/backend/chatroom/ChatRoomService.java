@@ -2,6 +2,7 @@ package com.example.backend.chatroom;
 
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -11,7 +12,7 @@ import java.util.Optional;
 public class ChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
-
+    @Cacheable(value = "chatRoom", key = "#senderId + '-' + #recipientId + '-' + #createNewRoomIfNotExists")
     public Optional<String> getChatRoomId(
             String senderId,
             String recipientId,

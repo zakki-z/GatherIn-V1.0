@@ -3,6 +3,7 @@ package com.example.backend.chat;
 import com.example.backend.chatroom.ChatRoomService;
 import com.example.backend.shared.exceptions.ChatRoomNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -22,7 +23,7 @@ public class ChatMessageService {
         repository.save(chatMessage);
         return chatMessage;
     }
-
+    @Cacheable(value = "chatMessage",key = "#senderId+'_'+recipientId")
     public List<ChatMessage> findChatMessages(String senderId, String recipientId) {
         var chatId = chatRoomService.getChatRoomId(senderId, recipientId, false);
         return chatId.map(repository::findByChatId).orElse(new ArrayList<>());
