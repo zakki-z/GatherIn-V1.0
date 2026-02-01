@@ -1,0 +1,80 @@
+version: "3.9"
+
+services:
+  mongo_db:
+    image: mongo:5.0.2
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=$MONGODB_USER
+      - MONGO_INITDB_ROOT_PASSWORD=$MONGODB_PASSWORD
+    ports:
+      - $MONGODB_LOCAL_PORT:$MONGODB_DOCKER_PORT
+    volumes:
+      - db:/data/db
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: chat_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - chat-network
+
+  nginx:
+    image: nginx:latest
+    container_name: chat_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./container/data/nginx/www/html:/var/www/html
+      - ./container/data/nginx/etc/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - chat-network
+
+  backend:
+    build:
+      context: ../code/backend
+      dockerfile: ../../infra/spring-boot/Dockerfile
+    container_name: chat_backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-chatapp}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-chatuser}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-chatpassword}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - chat-network
+
+  frontend:
+    build:
+      context: ../code/frontend-nextjs
+      dockerfile: ../../infra/nextjs/Dockerfile
+    container_name: chat_frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost/api}
+    depends_on:
+      - backend
+    networks:
+      - chat-network
+
+volumes:
+  db:
+  redis_data:
+
+networks:
+  chat-network:
+    driver: bridge
