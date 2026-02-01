@@ -1,6 +1,7 @@
 package com.example.backend.chat;
 
 import com.example.backend.chatroom.ChatRoomService;
+import com.example.backend.shared.exceptions.ChatRoomNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,8 +79,8 @@ class ChatMessageServiceTest {
                 .thenReturn(Optional.empty());
 
         // Act & Assert
-        // The original code uses .orElseThrow(), which throws NoSuchElementException if Optional is empty
-        assertThrows(java.util.NoSuchElementException.class, () -> chatMessageService.save(chatMessage));
+        // The code throws ChatRoomNotFoundException (not NoSuchElementException)
+        assertThrows(ChatRoomNotFoundException.class, () -> chatMessageService.save(chatMessage));
 
         // Verify repository.save was never called
         verify(repository, never()).save(any(ChatMessage.class));
