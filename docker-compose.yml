@@ -37,25 +37,57 @@ services:
 
   backend:
     build:
-      context: ../code/backend
-      dockerfile: ../../infra/spring-boot/Dockerfile
-    container_name: chat_backend
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: spring-backend
     restart: unless-stopped
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-chatapp}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-chatuser}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-chatpassword}
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-      JWT_SECRET: ${JWT_SECRET}
     depends_on:
-      postgres:
+      mongodb:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
+    environment:
+      # MongoDB Configuration
+      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_APP_USERNAME:-appuser}:${MONGO_APP_PASSWORD:-apppass}@mongodb:27017/${MONGO_DATABASE:-appdb}?authSource=admin
+      SPRING_DATA_MONGODB_DATABASE: ${MONGO_DATABASE:-appdb}
+      
+      # Redis Configuration
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
+      
+      # Application Configuration
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILE:-development}
+      SERVER_PORT: 8080
+      
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      
+      # CORS Configuration
+      CORS_ALLOWED_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
     networks:
-      - chat-network
+      - backend
+      - frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     build:
